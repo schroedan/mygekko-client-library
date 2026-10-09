@@ -39,8 +39,8 @@ import { throwErrorIfTrendIsNotEnabled } from './utils/errors/errorUtils';
 type ClientConfig = {
   /** The base url. */
   baseUrl: string;
-  /** The auth query. */
-  authQuery: string;
+  /** The auth query params. */
+  authParams: Record<string, string>;
 };
 
 /**
@@ -124,7 +124,7 @@ export abstract class Client {
   /** The base urls */
   private readonly baseUrl: string;
   /** The auth query params */
-  private readonly authQueryString: string;
+  private readonly authParams: Record<string, string>;
 
   /** The myGEKKO device system configuration */
   private _systemConfig: SystemConfig = '';
@@ -210,7 +210,7 @@ export abstract class Client {
    */
   protected constructor(config: ClientConfig) {
     this.baseUrl = config.baseUrl;
-    this.authQueryString = config.authQuery;
+    this.authParams = config.authParams;
   }
 
   /**
@@ -256,7 +256,9 @@ export abstract class Client {
    */
   private async internalRequest<T>(endpoint: string): Promise<T> {
     try {
-      const response = await axios.get(`${this.baseUrl}${endpoint}${this.authQueryString}`);
+      // Strip trailing query delimiters, axios appends the encoded auth params itself.
+      const url = `${this.baseUrl}${endpoint}`.replace(/[?&]+$/, '');
+      const response = await axios.get(url, { params: this.authParams });
       return response.data;
     } catch (error) {
       if (isAxiosError(error) && error.response) {
@@ -370,7 +372,11 @@ export class RemoteClient extends Client {
   public constructor(config: RemoteClientConfig) {
     super({
       baseUrl: 'https://live.my-gekko.com/api/v1',
-      authQuery: `username=${config.username}&key=${config.apiKey}&gekkoid=${config.gekkoId}`,
+      authParams: {
+        username: config.username,
+        key: config.apiKey,
+        gekkoid: config.gekkoId,
+      },
     });
   }
 }
@@ -387,7 +393,10 @@ export class LocalClient extends Client {
   public constructor(config: LocalClientConfig) {
     super({
       baseUrl: `http://${config.ip}/api/v1`,
-      authQuery: `username=${config.username}&password=${config.password}`,
+      authParams: {
+        username: config.username,
+        password: config.password,
+      },
     });
   }
 }
