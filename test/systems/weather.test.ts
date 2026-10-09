@@ -32,11 +32,12 @@ const status = {
 /**
  * Creates a local client with a stubbed system configuration and status.
  * @param config - The system configuration.
+ * @param response - The status response.
  */
-function createClient(config: SystemConfig): LocalClient {
+function createClient(config: SystemConfig, response: SystemStatusResponse = status): LocalClient {
   const client = new LocalClient({ ip: '127.0.0.1', username: 'test', password: 'test' });
   jest.spyOn(client, 'systemConfig', 'get').mockReturnValue(config);
-  jest.spyOn(client, 'systemStatusRequest').mockResolvedValue(status);
+  jest.spyOn(client, 'systemStatusRequest').mockResolvedValue(response);
   return client;
 }
 
@@ -79,5 +80,20 @@ test('getItem returns null units without a format', async () => {
   await expect(client.weather.getItem()).resolves.toMatchObject({
     twilight: 120,
     units: { twilight: null, brightness: null },
+  });
+});
+
+test('getItem returns null for values missing in the status', async () => {
+  const { humidity, ...statusWithoutHumidity } = status as unknown as Record<string, unknown>;
+  const client = createClient(
+    systemConfig as unknown as SystemConfig,
+    statusWithoutHumidity as unknown as SystemStatusResponse
+  );
+
+  expect(humidity).toBeDefined();
+  await expect(client.weather.getItem()).resolves.toMatchObject({
+    humidity: null,
+    brightness: 1.5,
+    temperature: -2.3,
   });
 });
