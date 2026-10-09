@@ -1,4 +1,5 @@
 import axios, { isAxiosError } from 'axios';
+import type { AxiosInstance } from 'axios';
 
 import { CLIENT_ERROR_MESSAGES, ClientError } from './errors';
 import {
@@ -41,6 +42,8 @@ type ClientConfig = {
   baseUrl: string;
   /** The auth query params. */
   authParams: Record<string, string>;
+  /** The axios instance used for http requests. */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -54,6 +57,8 @@ export type RemoteClientConfig = {
   gekkoId: string;
   /** The remote api key */
   apiKey: string;
+  /** An optional axios instance used for http requests, e.g. to add caching or retries */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -67,6 +72,8 @@ export type LocalClientConfig = {
   username: string;
   /** The local password */
   password: string;
+  /** An optional axios instance used for http requests, e.g. to add caching or retries */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -125,6 +132,8 @@ export abstract class Client {
   private readonly baseUrl: string;
   /** The auth query params */
   private readonly authParams: Record<string, string>;
+  /** The axios instance used for http requests */
+  private readonly axiosInstance: AxiosInstance;
 
   /** The myGEKKO device system configuration */
   private _systemConfig: SystemConfig = '';
@@ -211,6 +220,7 @@ export abstract class Client {
   protected constructor(config: ClientConfig) {
     this.baseUrl = config.baseUrl;
     this.authParams = config.authParams;
+    this.axiosInstance = config.axiosInstance ?? axios.create();
   }
 
   /**
@@ -258,7 +268,7 @@ export abstract class Client {
     try {
       // Strip trailing query delimiters, axios appends the encoded auth params itself.
       const url = `${this.baseUrl}${endpoint}`.replace(/[?&]+$/, '');
-      const response = await axios.get(url, { params: this.authParams });
+      const response = await this.axiosInstance.get(url, { params: this.authParams });
       return response.data;
     } catch (error) {
       if (isAxiosError(error) && error.response) {
@@ -377,6 +387,7 @@ export class RemoteClient extends Client {
         key: config.apiKey,
         gekkoid: config.gekkoId,
       },
+      axiosInstance: config.axiosInstance,
     });
   }
 }
@@ -397,6 +408,7 @@ export class LocalClient extends Client {
         username: config.username,
         password: config.password,
       },
+      axiosInstance: config.axiosInstance,
     });
   }
 }
