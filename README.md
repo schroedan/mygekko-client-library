@@ -70,6 +70,23 @@ try {
 }
 ```
 
+### Using a custom axios instance
+
+Both clients accept an optional `axiosInstance`, e.g. to add caching, retries, timeouts or logging:
+
+```js
+import axios from 'axios';
+import { setupCache } from 'axios-cache-interceptor';
+import { LocalClient } from 'mygekko-client-library';
+
+const client = new LocalClient({
+  ip: '<your-mygekko-ip-address>',
+  username: '<your-mygekko-username>',
+  password: '<your-mygekko-password>',
+  axiosInstance: setupCache(axios.create({ timeout: 5000 })),
+});
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

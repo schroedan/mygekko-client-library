@@ -1,4 +1,5 @@
 import axios, { isAxiosError } from 'axios';
+import type { AxiosInstance } from 'axios';
 
 import { CLIENT_ERROR_MESSAGES, ClientError } from './errors';
 import {
@@ -41,6 +42,8 @@ type ClientConfig = {
   baseUrl: string;
   /** The auth query. */
   authQuery: string;
+  /** The axios instance used for http requests. */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -54,6 +57,8 @@ export type RemoteClientConfig = {
   gekkoId: string;
   /** The remote api key */
   apiKey: string;
+  /** An optional axios instance used for http requests, e.g. to add caching or retries */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -67,6 +72,8 @@ export type LocalClientConfig = {
   username: string;
   /** The local password */
   password: string;
+  /** An optional axios instance used for http requests, e.g. to add caching or retries */
+  axiosInstance?: AxiosInstance;
 };
 
 /**
@@ -125,6 +132,8 @@ export abstract class Client {
   private readonly baseUrl: string;
   /** The auth query params */
   private readonly authQueryString: string;
+  /** The axios instance used for http requests */
+  private readonly axiosInstance: AxiosInstance;
 
   /** The myGEKKO device system configuration */
   private _systemConfig: SystemConfig = '';
@@ -211,6 +220,7 @@ export abstract class Client {
   protected constructor(config: ClientConfig) {
     this.baseUrl = config.baseUrl;
     this.authQueryString = config.authQuery;
+    this.axiosInstance = config.axiosInstance ?? axios.create();
   }
 
   /**
@@ -256,7 +266,9 @@ export abstract class Client {
    */
   private async internalRequest<T>(endpoint: string): Promise<T> {
     try {
-      const response = await axios.get(`${this.baseUrl}${endpoint}${this.authQueryString}`);
+      const response = await this.axiosInstance.get(
+        `${this.baseUrl}${endpoint}${this.authQueryString}`
+      );
       return response.data;
     } catch (error) {
       if (isAxiosError(error) && error.response) {
@@ -371,6 +383,7 @@ export class RemoteClient extends Client {
     super({
       baseUrl: 'https://live.my-gekko.com/api/v1',
       authQuery: `username=${config.username}&key=${config.apiKey}&gekkoid=${config.gekkoId}`,
+      axiosInstance: config.axiosInstance,
     });
   }
 }
@@ -388,6 +401,7 @@ export class LocalClient extends Client {
     super({
       baseUrl: `http://${config.ip}/api/v1`,
       authQuery: `username=${config.username}&password=${config.password}`,
+      axiosInstance: config.axiosInstance,
     });
   }
 }
