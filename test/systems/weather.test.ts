@@ -55,3 +55,29 @@ test('getItem requests the meteo status', async () => {
   });
   expect(client.systemStatusRequest).toHaveBeenCalledWith(SystemType.weather);
 });
+
+test('getItem exposes the units of the meteo values', async () => {
+  const client = createClient(systemConfig as unknown as SystemConfig);
+
+  await expect(client.weather.getItem()).resolves.toMatchObject({
+    units: {
+      twilight: 'lx',
+      humidity: '%',
+      brightness: 'kLx',
+      brightnessWest: 'kLx',
+      brightnessEast: 'kLx',
+      wind: 'm/s',
+      temperature: '°C',
+      rain: 'l/h',
+    },
+  });
+});
+
+test('getItem returns null units without a format', async () => {
+  const client = createClient(JSON.parse('{"globals": {"meteo": {"twilight": {}}}}'));
+
+  await expect(client.weather.getItem()).resolves.toMatchObject({
+    twilight: 120,
+    units: { twilight: null, brightness: null },
+  });
+});
