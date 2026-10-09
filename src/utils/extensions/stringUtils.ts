@@ -29,3 +29,12 @@ export function systemFilteredByItems(systemConfig: SystemConfig): string[] {
 export function systemFilteredByGroup(systemConfig: SystemConfig): string[] {
   return Object.keys(systemConfig).filter((key) => key.includes('group'));
 }
+
+/**
+ * Extracts the unit from a myGEKKO value format, e.g. `kLx` from `float[0.00,100000.00](kLx)`.
+ * @param format - The value format.
+ */
+export function unitFromFormat(format: string | undefined): string | null {
+  const unit = format?.match(/\(([^()]*)\)\s*$/)?.[1];
+  return unit ? unit : null;
+}
